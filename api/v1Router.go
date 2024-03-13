@@ -10,5 +10,6 @@ import (
 func HandleV1Router(r *http.ServeMux){
 	routeStrCls := helpers.RouteStrClosure("/api/v1")
 	// users routes
-	r.HandleFunc(routeStrCls("POST", "/users"), controllers.LoginUser)
+	r.HandleFunc(routeStrCls("POST", "/users/login"), controllers.HandleLoginUser)
+	r.HandleFunc(routeStrCls("POST", "/users/register"), controllers.HandleRegisterUser)
 }
