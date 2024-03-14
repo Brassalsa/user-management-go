@@ -3,15 +3,17 @@ package db
 import (
 	"context"
 	"errors"
+	"log"
 
 	"github.com/Brassalsa/user-management-go/pkg/helpers"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Database struct {
 	Url         string
-	Collections []string
+	collections []string
 	Ctx         context.Context
 	client      *mongo.Client
 	database    *mongo.Database
@@ -37,15 +39,19 @@ func (db *Database) Connect(ctx context.Context, dbName string) error {
 	}
 
 	db.database = client.Database(dbName)
-
-	for _, val := range db.Collections {
-		err := db.database.CreateCollection(db.Ctx, val)
-		if err != nil {
-			return err
-		}
-
+	indexModel := mongo.IndexModel{
+		Keys: bson.D{
+			{Key: "username", Value: 1},
+			{Key: "email", Value: 1},
+		},
+		Options: options.Index().SetUnique(true),
 	}
-
+	collection := client.Database(dbName).Collection("users")
+	db.collections = []string{"users"}
+	_, err = collection.Indexes().CreateOne(ctx, indexModel)
+	if err != nil {
+		log.Fatal(err)
+	}
 	return nil
 }
 
@@ -56,7 +62,7 @@ func (db *Database) Close() error {
 
 // add data to collection
 func (db *Database) InsertIntoCollection(collectionName string, payload interface{}) (*mongo.InsertOneResult, error) {
-	c := helpers.Contains(db.Collections, collectionName)
+	c := helpers.Contains(db.collections, collectionName)
 	if !c {
 		return nil, errors.New("collection doesn't exists")
 	}
@@ -67,7 +73,7 @@ func (db *Database) InsertIntoCollection(collectionName string, payload interfac
 
 // delete data from collection
 func (db *Database) DeleteFromCollection(collectionName string, filter interface{}) error {
-	c := helpers.Contains(db.Collections, collectionName)
+	c := helpers.Contains(db.collections, collectionName)
 	if !c {
 		return errors.New("collection doesn't exists")
 	}
@@ -80,7 +86,7 @@ func (db *Database) DeleteFromCollection(collectionName string, filter interface
 
 // find data
 func (db *Database) FindOne(collectionName string, filter interface{}) (*mongo.SingleResult, error) {
-	c := helpers.Contains(db.Collections, collectionName)
+	c := helpers.Contains(db.collections, collectionName)
 	if !c {
 		return nil, errors.New("collection doesn't exists")
 	}
