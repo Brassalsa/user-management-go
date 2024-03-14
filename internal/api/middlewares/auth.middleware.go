@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -12,31 +11,25 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type params struct {
-	Token string `json:"token"`
-}
-
 type AuthCtx struct {
 	Dbfn     *db.Database
 	AuthUser *db.User
 }
 
 func VerifyTokenfunc(w http.ResponseWriter, r *http.Request, mCtx *AuthCtx, next *func()) {
-
 	dbfn := mCtx.Dbfn
-	decoder := json.NewDecoder(r.Body)
-	tokenParam := params{}
-	err := decoder.Decode(&tokenParam)
+
+	token, err := GetAPiKey(r.Header)
 
 	if err != nil {
-		helpers.RespondWithError(w, 400, fmt.Sprint("error in token: ", err))
+		helpers.RespondWithError(w, 400, "error in get token from header")
 		return
 	}
 
-	authUser, err := internal.ValidateToken(tokenParam.Token)
+	authUser, err := internal.ValidateToken(token)
 
 	if err != nil {
-		helpers.RespondWithError(w, 401, fmt.Sprint("Unauthorized: ", err))
+		helpers.RespondWithError(w, 401, "unauthorized token malformed")
 		return
 	}
 	res, err := dbfn.FindOne("users", bson.D{{
@@ -54,11 +47,18 @@ func VerifyTokenfunc(w http.ResponseWriter, r *http.Request, mCtx *AuthCtx, next
 		helpers.RespondWithError(w, 400, err.Error())
 		return
 	}
-
 	user := db.User{}
-
-	res.Decode(&user)
-
+	err = res.Decode(&user)
+	if err != nil {
+		helpers.RespondWithError(w, 400, fmt.Sprint("something went wrong: ", err))
+		return
+	}
+	isEmpty := helpers.CheckEmptyStrings([]string{user.Username, user.Email})
+	if isEmpty {
+		helpers.RespondWithError(w, 401, "Unauthorized")
+		return
+	}
+	mCtx.AuthUser = &user
 	// call next
 	(*next)()
 }
