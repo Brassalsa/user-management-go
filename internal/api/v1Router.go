@@ -14,10 +14,10 @@ func HandleV1Router(r *http.ServeMux, dbfn *db.Database) {
 	dbCtx := ApiContext[*db.Database]{
 		ctx: dbfn,
 	}
-	routeStrCls := helpers.RouteStrClosure("/api/v1")
+	v1Route := helpers.RouteStrClosure("/api/v1")
 	// users routes
-	r.HandleFunc(routeStrCls("POST", "/users/login"), dbCtx.Provider(controllers.HandleLoginUser))
-	r.HandleFunc(routeStrCls("POST", "/users/register"), dbCtx.Provider(controllers.HandleRegisterUser))
+	r.HandleFunc(v1Route("POST", "/users/login"), dbCtx.Provider(controllers.HandleLoginUser))
+	r.HandleFunc(v1Route("POST", "/users/register"), dbCtx.Provider(controllers.HandleRegisterUser))
 
 	// secure routes
 	mdCtx := ApiContext[*middlewares.AuthCtx]{
@@ -27,5 +27,5 @@ func HandleV1Router(r *http.ServeMux, dbfn *db.Database) {
 	}
 	gpCtx := middlewares.GroupMiddlewares[*middlewares.AuthCtx]
 	type Arr []middlewares.HFunc[*middlewares.AuthCtx]
-	r.HandleFunc(routeStrCls("POST", "/users/current"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyTokenfunc, controllers.HandleCheckCurrentUser}))
+	r.HandleFunc(v1Route("GET", "/users/me"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyTokenfunc, controllers.HandleCheckCurrentUser}))
 }
