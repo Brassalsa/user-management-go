@@ -1,6 +1,9 @@
 package helpers
 
-import "reflect"
+import (
+	"reflect"
+	"strings"
+)
 
 func Contains(slice interface{}, target interface{}) bool {
 	sliceValue := reflect.ValueOf(slice)
@@ -17,5 +20,14 @@ func Contains(slice interface{}, target interface{}) bool {
 		}
 	}
 
+	return false
+}
+
+func CheckEmptyStrings(slice []string) bool {
+	for _, val := range slice {
+		if len(strings.Trim(val, " ")) == 0 {
+			return true
+		}
+	}
 	return false
 }
