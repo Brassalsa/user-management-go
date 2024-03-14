@@ -6,24 +6,29 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Brassalsa/user-management-go/api"
+	"github.com/Brassalsa/user-management-go/internal/api"
 	"github.com/Brassalsa/user-management-go/internal/db"
 )
 
 func main() {
-
-	r := http.DefaultServeMux
-	db := db.Database{
-		Url:         "mongodb://localhost:27017",
-		Collections: []string{"users"},
+	// db connect
+	dbFn := db.Database{
+		Url: "mongodb://localhost:27017",
 	}
-	db.Connect(context.TODO(), "user-management")
+	err := dbFn.Connect(context.TODO(), "user-management")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// router
+	r := http.NewServeMux()
 	// testing endpoints
 	r.HandleFunc("GET /healthz", api.HandlerReadiness)
 	r.HandleFunc("GET /err", api.HandlerError)
 
 	// api routes
-	api.HandleV1Router(r)
+	api.HandleV1Router(r, &dbFn)
 
 	fmt.Println("server @ http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", r))

@@ -6,10 +6,17 @@ import (
 	"net/http"
 )
 
+type DataResponse struct {
+	Data interface{} `json:"data"`
+}
+
 func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	data, err := json.Marshal(payload)
+
 	if err != nil {
-		log.Println("Failed to marshal JSON ", payload)
+		log.Println("Failed to marshal JSON ", DataResponse{
+			Data: payload,
+		})
 		w.WriteHeader(500)
 		return
 	}
@@ -23,10 +30,10 @@ type errorResponse struct {
 }
 
 func RespondWithError(w http.ResponseWriter, code int, msg string) {
-	if (code > 499) {
+	if code > 499 {
 		log.Println("Error code 5XX :", msg)
 	}
-	
+
 	RespondWithJSON(w, code, errorResponse{
 		Error: msg,
 	})
