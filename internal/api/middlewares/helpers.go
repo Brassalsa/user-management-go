@@ -27,7 +27,7 @@ func GroupMiddlewares[T any](ctx T, handleFuncs []HFunc[T]) http.HandlerFunc {
 
 // get token from header:
 // Authorization   token <your-token>
-func GetAPiKey(headers http.Header) (string, error) {
+func GetAuthToken(headers http.Header) (string, error) {
 	val := headers.Get("Authorization")
 	if val == "" {
 		return "", errors.New("no auth info found")
