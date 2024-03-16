@@ -38,7 +38,7 @@ func GetAuthToken(headers http.Header) (string, error) {
 		return "", errors.New("malformed auth header")
 	}
 
-	if vals[0] != "token" {
+	if vals[0] != "Bearer" {
 		return "", errors.New("malformed first part of auth header")
 	}
 

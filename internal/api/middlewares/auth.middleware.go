@@ -3,6 +3,7 @@ package middlewares
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Brassalsa/user-management-go/internal"
 
@@ -16,11 +17,10 @@ type AuthCtx struct {
 	AuthUser *db.User
 }
 
-func VerifyTokenfunc(w http.ResponseWriter, r *http.Request, mCtx *AuthCtx, next *func()) {
+func VerifyToken(w http.ResponseWriter, r *http.Request, mCtx *AuthCtx, next *func()) {
 	dbfn := mCtx.Dbfn
 
 	token, err := GetAuthToken(r.Header)
-
 	if err != nil {
 		helpers.RespondWithError(w, 400, "error in get token from header")
 		return
@@ -41,9 +41,6 @@ func VerifyTokenfunc(w http.ResponseWriter, r *http.Request, mCtx *AuthCtx, next
 		{
 			Key:   "username",
 			Value: authUser.Username,
-		}, {
-			Key:   "email",
-			Value: authUser.Email,
 		}})
 
 	if err != nil {
@@ -51,18 +48,22 @@ func VerifyTokenfunc(w http.ResponseWriter, r *http.Request, mCtx *AuthCtx, next
 		return
 	}
 	user := db.User{}
-	err = res.Decode(&user)
 
-	if err != nil {
-		helpers.RespondWithError(w, 400, fmt.Sprint("something went wrong: ", err))
+	if err = res.Decode(&user); err != nil {
+		if strings.Contains(err.Error(), "no documents in result") {
+			helpers.RespondWithError(w, 401, "unauthorized")
+			return
+		}
+		helpers.RespondWithError(w, 400, fmt.Sprint("something went wrong: ", err.Error()))
 		return
 	}
-	isEmpty := helpers.CheckEmptyStrings([]string{user.Username, user.Email})
-	if isEmpty {
+
+	if isEmpty := helpers.CheckEmptyStrings([]string{user.Username, user.Email}); isEmpty {
 		helpers.RespondWithError(w, 401, "Unauthorized")
 		return
 	}
 	mCtx.AuthUser = &user
+
 	// call next
 	(*next)()
 }
