@@ -12,10 +12,10 @@ func HandleV1Router(r *http.ServeMux, dbfn *db.Database) {
 	dbCtx := ApiContext[*db.Database]{
 		ctx: dbfn,
 	}
-	v1Route := helpers.RouteStrClosure("/api/v1")
+	userV1Route := helpers.RouteStrClosure("/api/v1/users")
 	// users routes
-	r.HandleFunc(v1Route("POST", "/users/login"), dbCtx.Provider(HandleLoginUser))
-	r.HandleFunc(v1Route("POST", "/users/register"), dbCtx.Provider(HandleRegisterUser))
+	r.HandleFunc(userV1Route("POST", "/login"), dbCtx.Provider(HandleLoginUser))
+	r.HandleFunc(userV1Route("POST", "/register"), dbCtx.Provider(HandleRegisterUser))
 
 	// secure routes
 	mdCtx := ApiContext[*middlewares.AuthCtx]{
@@ -25,7 +25,9 @@ func HandleV1Router(r *http.ServeMux, dbfn *db.Database) {
 	}
 	gpCtx := middlewares.GroupMiddlewares[*middlewares.AuthCtx]
 	type Arr []middlewares.HFunc[*middlewares.AuthCtx]
-	r.HandleFunc(v1Route("GET", "/users/me"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyTokenfunc, HandleCheckCurrentUser}))
-	r.Handle(v1Route("POST", "/users/avatar"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyTokenfunc, HandleUploadAvatar}))
-
+	r.HandleFunc(userV1Route("GET", "/"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyToken, HandleCheckCurrentUser}))
+	r.HandleFunc(userV1Route("POST", "/avatar"), gpCtx(mdCtx.ctx, Arr{middlewares.FilesMiddleware, middlewares.VerifyToken, HandleUploadAvatar}))
+	r.HandleFunc(userV1Route("PUT", "/"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyToken, HandleUpdateUser}))
+	r.HandleFunc(userV1Route("POST", "/password"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyToken, HandleUpdatePassword}))
+	r.HandleFunc(userV1Route("POST", "/delete"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyToken, HandleDeleteUser}))
 }
