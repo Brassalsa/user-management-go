@@ -1,5 +1,6 @@
 user-management-go.exe
 
-/vendor
+/vendor/*
+!/vendor/modules.txt
 
 /static/*
