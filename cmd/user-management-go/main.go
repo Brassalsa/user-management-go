@@ -21,8 +21,14 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// static files
+	fs := http.FileServer(http.Dir("static/"))
+
 	// router
 	r := http.NewServeMux()
+	// static files
+	r.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	// testing endpoints
 	r.HandleFunc("GET /healthz", api.HandlerReadiness)
 	r.HandleFunc("GET /err", api.HandlerError)
