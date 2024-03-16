@@ -7,6 +7,7 @@ import (
 
 	"github.com/Brassalsa/user-management-go/pkg/helpers"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -62,8 +63,7 @@ func (db *Database) Close() error {
 
 // add data to collection
 func (db *Database) InsertIntoCollection(collectionName string, payload interface{}) (*mongo.InsertOneResult, error) {
-	c := helpers.Contains(db.collections, collectionName)
-	if !c {
+	if c := helpers.Contains(db.collections, collectionName); !c {
 		return nil, errors.New("collection doesn't exists")
 	}
 
@@ -73,8 +73,7 @@ func (db *Database) InsertIntoCollection(collectionName string, payload interfac
 
 // delete data from collection
 func (db *Database) DeleteFromCollection(collectionName string, filter interface{}) error {
-	c := helpers.Contains(db.collections, collectionName)
-	if !c {
+	if c := helpers.Contains(db.collections, collectionName); !c {
 		return errors.New("collection doesn't exists")
 	}
 
@@ -86,12 +85,29 @@ func (db *Database) DeleteFromCollection(collectionName string, filter interface
 
 // find data
 func (db *Database) FindOne(collectionName string, filter interface{}) (*mongo.SingleResult, error) {
-	c := helpers.Contains(db.collections, collectionName)
-	if !c {
+
+	if c := helpers.Contains(db.collections, collectionName); !c {
 		return nil, errors.New("collection doesn't exists")
 	}
 
 	coll := db.database.Collection(collectionName)
 	res := coll.FindOne(db.Ctx, filter)
+	return res, nil
+}
+
+// update data by id
+func (db *Database) UpdateById(collectionName string, id primitive.ObjectID, updateParam interface{}) (*mongo.UpdateResult, error) {
+	if c := helpers.Contains(db.collections, collectionName); !c {
+		return nil, errors.New("collection doesn't exists")
+	}
+
+	coll := db.database.Collection(collectionName)
+	res, err := coll.UpdateByID(db.Ctx, id, bson.D{{
+		Key:   "$set",
+		Value: updateParam,
+	}})
+	if err != nil {
+		return nil, err
+	}
 	return res, nil
 }
