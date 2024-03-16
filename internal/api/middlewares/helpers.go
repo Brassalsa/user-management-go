@@ -1,14 +1,19 @@
 package middlewares
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strings"
 )
 
-type HFunc[T any] func(w http.ResponseWriter, r *http.Request, ctx T, next *func())
+type HFunc func(w http.ResponseWriter, r *http.Request, next *func())
 
-func GroupMiddlewares[T any](ctx T, handleFuncs []HFunc[T]) http.HandlerFunc {
+type ctxKey string
+
+const CtxKey ctxKey = "ctx"
+
+func GroupMiddlewares[T any](ctx T, handleFuncs []HFunc) http.HandlerFunc {
 	goNext := 0
 	next := func() {
 		goNext += 1
@@ -16,17 +21,18 @@ func GroupMiddlewares[T any](ctx T, handleFuncs []HFunc[T]) http.HandlerFunc {
 
 	return func(w http.ResponseWriter, r *http.Request) {
 		goNext = 0
+		mctx := context.WithValue(r.Context(), CtxKey, ctx)
 		for ind, val := range handleFuncs {
 			if goNext != ind || goNext == len(handleFuncs) {
 				return
 			}
-			val(w, r, ctx, &next)
+			val(w, r.WithContext(mctx), &next)
 		}
 	}
 }
 
 // get token from header:
-// Authorization   token <your-token>
+// Authorization   Bearer <your-token>
 func GetAuthToken(headers http.Header) (string, error) {
 	val := headers.Get("Authorization")
 	if val == "" {

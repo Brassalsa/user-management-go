@@ -17,8 +17,14 @@ type AuthCtx struct {
 	AuthUser *db.User
 }
 
-func VerifyToken(w http.ResponseWriter, r *http.Request, mCtx *AuthCtx, next *func()) {
-	dbfn := mCtx.Dbfn
+func VerifyToken(w http.ResponseWriter, r *http.Request, next *func()) {
+
+	ctx, ok := r.Context().Value(CtxKey).(*AuthCtx)
+	if !ok {
+		helpers.RespondWithError(w, 500, "something went wrong in getting context")
+	}
+
+	dbfn := ctx.Dbfn
 
 	token, err := GetAuthToken(r.Header)
 	if err != nil {
@@ -62,7 +68,8 @@ func VerifyToken(w http.ResponseWriter, r *http.Request, mCtx *AuthCtx, next *fu
 		helpers.RespondWithError(w, 401, "Unauthorized")
 		return
 	}
-	mCtx.AuthUser = &user
+
+	ctx.AuthUser = &user
 
 	// call next
 	(*next)()

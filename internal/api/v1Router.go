@@ -9,25 +9,23 @@ import (
 )
 
 func HandleV1Router(r *http.ServeMux, dbfn *db.Database) {
-	dbCtx := ApiContext[*db.Database]{
-		ctx: dbfn,
-	}
-	userV1Route := helpers.RouteStrClosure("/api/v1/users")
+	type Arr []middlewares.HFunc
+	dbCtx := middlewares.GroupMiddlewares[*db.Database]
+
+	userV1Route := helpers.RouteStrCl("/api/v1/users")
 	// users routes
-	r.HandleFunc(userV1Route("POST", "/login"), dbCtx.Provider(HandleLoginUser))
-	r.HandleFunc(userV1Route("POST", "/register"), dbCtx.Provider(HandleRegisterUser))
+	r.HandleFunc(userV1Route("POST", "/login"), dbCtx(dbfn, Arr{HandleLoginUser}))
+	r.HandleFunc(userV1Route("POST", "/register"), dbCtx(dbfn, Arr{HandleRegisterUser}))
 
 	// secure routes
-	mdCtx := ApiContext[*middlewares.AuthCtx]{
-		ctx: &middlewares.AuthCtx{
-			Dbfn: dbfn,
-		},
+	ctx := &middlewares.AuthCtx{
+		Dbfn: dbfn,
 	}
 	gpCtx := middlewares.GroupMiddlewares[*middlewares.AuthCtx]
-	type Arr []middlewares.HFunc[*middlewares.AuthCtx]
-	r.HandleFunc(userV1Route("GET", "/"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyToken, HandleCheckCurrentUser}))
-	r.HandleFunc(userV1Route("POST", "/avatar"), gpCtx(mdCtx.ctx, Arr{middlewares.FilesMiddleware, middlewares.VerifyToken, HandleUploadAvatar}))
-	r.HandleFunc(userV1Route("PUT", "/"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyToken, HandleUpdateUser}))
-	r.HandleFunc(userV1Route("POST", "/password"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyToken, HandleUpdatePassword}))
-	r.HandleFunc(userV1Route("POST", "/delete"), gpCtx(mdCtx.ctx, Arr{middlewares.VerifyToken, HandleDeleteUser}))
+
+	r.HandleFunc(userV1Route("GET", "/"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleCheckCurrentUser}))
+	r.HandleFunc(userV1Route("POST", "/avatar"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleUploadAvatar}))
+	r.HandleFunc(userV1Route("PUT", "/"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleUpdateUser}))
+	r.HandleFunc(userV1Route("POST", "/password"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleUpdatePassword}))
+	r.HandleFunc(userV1Route("POST", "/delete"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleDeleteUser}))
 }

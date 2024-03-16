@@ -8,8 +8,8 @@ import (
 
 	"github.com/Brassalsa/user-management-go/internal"
 	"github.com/Brassalsa/user-management-go/internal/api/middlewares"
+	"github.com/Brassalsa/user-management-go/internal/api/validators"
 	"github.com/Brassalsa/user-management-go/internal/db"
-	"github.com/Brassalsa/user-management-go/internal/validators"
 	"github.com/Brassalsa/user-management-go/pkg/helpers"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -25,7 +25,7 @@ type loginResponse struct {
 }
 
 // login user
-func HandleLoginUser(w http.ResponseWriter, r *http.Request, dbfn *db.Database) {
+func HandleLoginUser(w http.ResponseWriter, r *http.Request, _ *func()) {
 	decoder := json.NewDecoder(r.Body)
 	params := loginParams{}
 
@@ -36,6 +36,11 @@ func HandleLoginUser(w http.ResponseWriter, r *http.Request, dbfn *db.Database) 
 
 	if isEmpty := helpers.CheckEmptyStrings([]string{params.Username, params.Password}); isEmpty {
 		helpers.RespondWithError(w, 400, "username, password are required")
+		return
+	}
+	dbfn, ok := r.Context().Value(middlewares.CtxKey).(*db.Database)
+	if !ok {
+		helpers.RespondWithError(w, 500, "something went wrong")
 		return
 	}
 
@@ -70,7 +75,7 @@ func HandleLoginUser(w http.ResponseWriter, r *http.Request, dbfn *db.Database) 
 }
 
 // register user
-func HandleRegisterUser(w http.ResponseWriter, r *http.Request, dbfn *db.Database) {
+func HandleRegisterUser(w http.ResponseWriter, r *http.Request, _ *func()) {
 	decoder := json.NewDecoder(r.Body)
 	params := db.UserRegister{}
 	if err := decoder.Decode(&params); err != nil {
@@ -92,6 +97,11 @@ func HandleRegisterUser(w http.ResponseWriter, r *http.Request, dbfn *db.Databas
 
 	if err := internal.HashString(&params.Password); err != nil {
 		helpers.RespondWithError(w, 500, "Something went wrong")
+		return
+	}
+	dbfn, ok := r.Context().Value(middlewares.CtxKey).(*db.Database)
+	if !ok {
+		helpers.RespondWithError(w, 500, "something went wrong")
 		return
 	}
 
@@ -118,9 +128,13 @@ type userData struct {
 	Avatar   string             `json:"avatar"`
 }
 
-func HandleCheckCurrentUser(w http.ResponseWriter, r *http.Request, mCtx *middlewares.AuthCtx, _ *func()) {
-	authUser := mCtx.AuthUser
-
+func HandleCheckCurrentUser(w http.ResponseWriter, r *http.Request, _ *func()) {
+	ctx, ok := r.Context().Value(middlewares.CtxKey).(*middlewares.AuthCtx)
+	if !ok {
+		helpers.RespondWithError(w, 500, "something went wrong")
+		return
+	}
+	authUser := ctx.AuthUser
 	helpers.RespondWithJSON(w, 200, userData{
 		Id:       authUser.ID,
 		Username: authUser.Username,
@@ -132,7 +146,7 @@ func HandleCheckCurrentUser(w http.ResponseWriter, r *http.Request, mCtx *middle
 
 // upload file
 
-func HandleUploadAvatar(w http.ResponseWriter, r *http.Request, mCtx *middlewares.AuthCtx, _ *func()) {
+func HandleUploadAvatar(w http.ResponseWriter, r *http.Request, _ *func()) {
 
 	url, err := UploadFile(r)
 
@@ -140,9 +154,15 @@ func HandleUploadAvatar(w http.ResponseWriter, r *http.Request, mCtx *middleware
 		helpers.RespondWithError(w, 400, err.Error())
 		return
 	}
-	user := mCtx.AuthUser
+
+	ctx, ok := r.Context().Value(middlewares.CtxKey).(*middlewares.AuthCtx)
+	if !ok {
+		helpers.RespondWithError(w, 500, "something went wrong")
+		return
+	}
+	user := ctx.AuthUser
 	// update avatar
-	if _, err := mCtx.Dbfn.UpdateById("users", user.ID, bson.D{{
+	if _, err := ctx.Dbfn.UpdateById("users", user.ID, bson.D{{
 		Key:   "avatar",
 		Value: url,
 	}}); err != nil {
@@ -150,11 +170,11 @@ func HandleUploadAvatar(w http.ResponseWriter, r *http.Request, mCtx *middleware
 		return
 	}
 	if isEmpty := helpers.CheckEmptyStrings([]string{user.Avatar}); !isEmpty {
-		if err := DeleteFile(mCtx.AuthUser.Avatar); err != nil {
+		if err := DeleteFile(ctx.AuthUser.Avatar); err != nil {
 			fmt.Println("err in deleting: ", err)
 		}
 	}
-	mCtx.AuthUser.Avatar = url
+	ctx.AuthUser.Avatar = url
 
 	helpers.RespondWithJSON(w, 200, url)
 }
@@ -165,7 +185,7 @@ type updateParams struct {
 	Email string
 }
 
-func HandleUpdateUser(w http.ResponseWriter, r *http.Request, mtCtx *middlewares.AuthCtx, _ *func()) {
+func HandleUpdateUser(w http.ResponseWriter, r *http.Request, _ *func()) {
 	decoder := json.NewDecoder(r.Body)
 	updateUser := updateParams{}
 	if err := decoder.Decode(&updateUser); err != nil {
@@ -178,9 +198,15 @@ func HandleUpdateUser(w http.ResponseWriter, r *http.Request, mtCtx *middlewares
 		return
 	}
 
-	user := mtCtx.AuthUser
+	ctx, ok := r.Context().Value(middlewares.CtxKey).(*middlewares.AuthCtx)
+	if !ok {
+		helpers.RespondWithError(w, 500, "something went wrong")
+		return
+	}
 
-	if _, err := mtCtx.Dbfn.UpdateById("users", user.ID, bson.D{
+	user := ctx.AuthUser
+
+	if _, err := ctx.Dbfn.UpdateById("users", user.ID, bson.D{
 		{Key: "name", Value: updateUser.Name},
 		{Key: "email", Value: updateUser.Email},
 	}); err != nil {
@@ -202,7 +228,7 @@ type updatePassword struct {
 	NewPassword string `json:"newPassword"`
 }
 
-func HandleUpdatePassword(w http.ResponseWriter, r *http.Request, mtCtx *middlewares.AuthCtx, _ *func()) {
+func HandleUpdatePassword(w http.ResponseWriter, r *http.Request, _ *func()) {
 	decoder := json.NewDecoder(r.Body)
 	passwordParams := updatePassword{}
 	if err := decoder.Decode(&passwordParams); err != nil {
@@ -220,7 +246,13 @@ func HandleUpdatePassword(w http.ResponseWriter, r *http.Request, mtCtx *middlew
 		return
 	}
 
-	if checkPassword := internal.CompareHash(mtCtx.AuthUser.Password, passwordParams.OldPassword); !checkPassword {
+	ctx, ok := r.Context().Value(middlewares.CtxKey).(*middlewares.AuthCtx)
+	if !ok {
+		helpers.RespondWithError(w, 500, "something went wrong")
+		return
+	}
+
+	if checkPassword := internal.CompareHash(ctx.AuthUser.Password, passwordParams.OldPassword); !checkPassword {
 		helpers.RespondWithError(w, 400, "wrong old password")
 		return
 	}
@@ -229,7 +261,7 @@ func HandleUpdatePassword(w http.ResponseWriter, r *http.Request, mtCtx *middlew
 		helpers.RespondWithError(w, 500, fmt.Sprint("somehting went wrong: ", err.Error()))
 		return
 	}
-	if _, err := mtCtx.Dbfn.UpdateById("users", mtCtx.AuthUser.ID, bson.D{
+	if _, err := ctx.Dbfn.UpdateById("users", ctx.AuthUser.ID, bson.D{
 		{Key: "password", Value: passwordParams.NewPassword},
 	}); err != nil {
 		helpers.RespondWithError(w, 500, err.Error())
@@ -246,7 +278,7 @@ type deleteUserParams struct {
 	Password string
 }
 
-func HandleDeleteUser(w http.ResponseWriter, r *http.Request, mtCtx *middlewares.AuthCtx, _ *func()) {
+func HandleDeleteUser(w http.ResponseWriter, r *http.Request, _ *func()) {
 	decoder := json.NewDecoder(r.Body)
 	params := deleteUserParams{}
 
@@ -264,18 +296,31 @@ func HandleDeleteUser(w http.ResponseWriter, r *http.Request, mtCtx *middlewares
 		return
 	}
 
-	user := mtCtx.AuthUser
+	ctx, ok := r.Context().Value(middlewares.CtxKey).(*middlewares.AuthCtx)
+	if !ok {
+		helpers.RespondWithError(w, 500, "something went wrong")
+		return
+	}
+
+	user := ctx.AuthUser
 	if checkPass := internal.CompareHash(user.Password, params.Password); !checkPass || user.Username != params.Username {
 		helpers.RespondWithError(w, 400, "wrong credentials provided")
 		return
 	}
+	avatar := ctx.AuthUser.Avatar
 
-	if err := mtCtx.Dbfn.DeleteFromCollection("users", bson.D{{
+	if err := ctx.Dbfn.DeleteFromCollection("users", bson.D{{
 		Key:   "_id",
 		Value: user.ID,
 	}}); err != nil {
 		helpers.RespondWithError(w, 500, err.Error())
 		return
+	}
+
+	if isEmpty := helpers.CheckEmptyStrings([]string{avatar}); !isEmpty {
+		if err := DeleteFile(avatar); err != nil {
+			fmt.Println("err in deleting: ", err)
+		}
 	}
 
 	helpers.RespondWithJSON(w, 200, "deleted successfully")
