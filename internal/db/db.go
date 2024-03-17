@@ -95,6 +95,10 @@ func (db *Database) FindOne(collectionName string, filter interface{}) (*mongo.S
 	return res, nil
 }
 
+func (db *Database) ConvertStrToId(s string) (primitive.ObjectID, error) {
+	return primitive.ObjectIDFromHex(s)
+}
+
 // update data by id
 func (db *Database) UpdateById(collectionName string, id primitive.ObjectID, updateParam interface{}) (*mongo.UpdateResult, error) {
 	if c := helpers.Contains(db.collections, collectionName); !c {
