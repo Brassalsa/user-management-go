@@ -10,3 +10,10 @@ func CheckValidPassword(password string) error {
 
 	return nil
 }
+
+func CheckValidRole(role string) error {
+	if role != "user" && role != "admin" {
+		return errors.New("role is not valid")
+	}
+	return nil
+}
