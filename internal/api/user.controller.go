@@ -54,7 +54,14 @@ func HandleLoginUser(w http.ResponseWriter, r *http.Request, _ *func()) {
 	}
 
 	user := db.User{}
-	res.Decode(&user)
+	if err = res.Decode(&user); err != nil {
+		if strings.Contains(err.Error(), "no documents in result") {
+			helpers.RespondWithError(w, 404, "wrong credentials")
+			return
+		}
+		helpers.RespondWithError(w, 400, err.Error())
+		return
+	}
 
 	if comparePass := internal.CompareHash(user.Password, params.Password); !comparePass {
 		helpers.RespondWithError(w, 400, "Wrong Credentials")
