@@ -35,7 +35,7 @@ func VerifyToken(w http.ResponseWriter, r *http.Request, next *func()) {
 	authUser, err := internal.ValidateToken(token)
 
 	if err != nil {
-		helpers.RespondWithError(w, 401, "unauthorized token malformed")
+		helpers.RespondWithError(w, 401, fmt.Sprint("unauthorized token malformed ", err.Error()))
 		return
 	}
 
