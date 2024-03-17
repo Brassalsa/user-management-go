@@ -28,4 +28,8 @@ func HandleV1Router(r *http.ServeMux, dbfn *db.Database) {
 	r.HandleFunc(userV1Route("PUT", "/"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleUpdateUser}))
 	r.HandleFunc(userV1Route("POST", "/password"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleUpdatePassword}))
 	r.HandleFunc(userV1Route("POST", "/delete"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleDeleteUser}))
+
+	adminV1Route := helpers.RouteStrCl("/api/v1/admin")
+	r.HandleFunc(adminV1Route("POST", "/register"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleRegisterAdmin}))
+	r.HandleFunc(adminV1Route("DELETE", "/{id}"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleDeleteUserByAdmin}))
 }
