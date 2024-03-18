@@ -30,6 +30,9 @@ func HandleV1Router(r *http.ServeMux, dbfn *db.Database) {
 	r.HandleFunc(userV1Route("POST", "/delete"), gpCtx(ctx, Arr{middlewares.VerifyToken, HandleDeleteUser}))
 
 	adminV1Route := helpers.RouteStrCl("/api/v1/admin")
-	r.HandleFunc(adminV1Route("POST", "/register"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleRegisterAdmin}))
-	r.HandleFunc(adminV1Route("DELETE", "/{id}"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleDeleteUserByAdmin}))
+	r.HandleFunc(adminV1Route("GET", "/all-users"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleGetAllUsers}))
+	r.HandleFunc(adminV1Route("POST", "/user/register"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleRegisterAdmin}))
+	r.HandleFunc(adminV1Route("GET", "/user/{id}"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleGetUserById}))
+	r.HandleFunc(adminV1Route("DELETE", "/user/{id}"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleDeleteUserByAdmin}))
+	r.HandleFunc(adminV1Route("PUT", "/user/{id}"), gpCtx(ctx, Arr{middlewares.VerifyToken, middlewares.VerifyAdmin, HandleModifyUser}))
 }
