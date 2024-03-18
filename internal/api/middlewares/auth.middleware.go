@@ -17,7 +17,7 @@ type AuthCtx struct {
 	AuthUser *db.User
 }
 
-func VerifyToken(w http.ResponseWriter, r *http.Request, next *func()) {
+func VerifyToken(w http.ResponseWriter, r *http.Request, next Next) {
 
 	ctx, ok := r.Context().Value(CtxKey).(*AuthCtx)
 	if !ok {

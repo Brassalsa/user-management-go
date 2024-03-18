@@ -16,7 +16,7 @@ import (
 
 // register user
 // admin users can create other admins as well as users
-func HandleRegisterAdmin(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleRegisterAdmin(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 	decoder := json.NewDecoder(r.Body)
 	params := db.UserRegister{}
 	if err := decoder.Decode(&params); err != nil {
@@ -63,7 +63,7 @@ func HandleRegisterAdmin(w http.ResponseWriter, r *http.Request, _ *func()) {
 }
 
 // delete user by admin
-func HandleDeleteUserByAdmin(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleDeleteUserByAdmin(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 	userID := r.PathValue("id")
 
 	ctx, ok := r.Context().Value(middlewares.CtxKey).(*middlewares.AuthCtx)
@@ -95,12 +95,10 @@ func HandleDeleteUserByAdmin(w http.ResponseWriter, r *http.Request, _ *func()) 
 
 	user := db.User{}
 	if err = res.Decode(&user); err != nil {
-
 		if strings.Contains(err.Error(), "no documents in result") {
 			helpers.RespondWithError(w, 404, "not found")
 			return
 		}
-
 		helpers.RespondWithError(w, 400, err.Error())
 		return
 	}

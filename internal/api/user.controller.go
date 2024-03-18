@@ -25,7 +25,7 @@ type loginResponse struct {
 }
 
 // login user
-func HandleLoginUser(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleLoginUser(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 	decoder := json.NewDecoder(r.Body)
 	params := loginParams{}
 
@@ -82,7 +82,7 @@ func HandleLoginUser(w http.ResponseWriter, r *http.Request, _ *func()) {
 }
 
 // register user
-func HandleRegisterUser(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleRegisterUser(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 	decoder := json.NewDecoder(r.Body)
 	params := db.UserRegister{}
 	if err := decoder.Decode(&params); err != nil {
@@ -135,7 +135,7 @@ type userData struct {
 	Avatar   string             `json:"avatar"`
 }
 
-func HandleCheckCurrentUser(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleCheckCurrentUser(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 	ctx, ok := r.Context().Value(middlewares.CtxKey).(*middlewares.AuthCtx)
 	if !ok {
 		helpers.RespondWithError(w, 500, "something went wrong")
@@ -153,7 +153,7 @@ func HandleCheckCurrentUser(w http.ResponseWriter, r *http.Request, _ *func()) {
 
 // upload file
 
-func HandleUploadAvatar(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleUploadAvatar(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 
 	url, err := UploadFile(r)
 
@@ -192,7 +192,7 @@ type updateParams struct {
 	Email string
 }
 
-func HandleUpdateUser(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleUpdateUser(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 	decoder := json.NewDecoder(r.Body)
 	updateUser := updateParams{}
 	if err := decoder.Decode(&updateUser); err != nil {
@@ -235,7 +235,7 @@ type updatePassword struct {
 	NewPassword string `json:"newPassword"`
 }
 
-func HandleUpdatePassword(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleUpdatePassword(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 	decoder := json.NewDecoder(r.Body)
 	passwordParams := updatePassword{}
 	if err := decoder.Decode(&passwordParams); err != nil {
@@ -285,7 +285,7 @@ type deleteUserParams struct {
 	Password string
 }
 
-func HandleDeleteUser(w http.ResponseWriter, r *http.Request, _ *func()) {
+func HandleDeleteUser(w http.ResponseWriter, r *http.Request, _ middlewares.Next) {
 	decoder := json.NewDecoder(r.Body)
 	params := deleteUserParams{}
 

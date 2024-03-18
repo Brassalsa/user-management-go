@@ -7,7 +7,7 @@ import (
 	"github.com/Brassalsa/user-management-go/pkg/helpers"
 )
 
-func FilesMiddleware(w http.ResponseWriter, r *http.Request, next *func()) {
+func FilesMiddleware(w http.ResponseWriter, r *http.Request, next Next) {
 	r.Body = http.MaxBytesReader(w, r.Body, constants.MAX_UPLOAD_SIZE)
 
 	if err := r.ParseMultipartForm(constants.MAX_UPLOAD_SIZE); err != nil {

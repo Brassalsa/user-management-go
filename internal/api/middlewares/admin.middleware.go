@@ -6,7 +6,7 @@ import (
 	"github.com/Brassalsa/user-management-go/pkg/helpers"
 )
 
-func VerifyAdmin(w http.ResponseWriter, r *http.Request, next *func()) {
+func VerifyAdmin(w http.ResponseWriter, r *http.Request, next Next) {
 
 	ctx, ok := r.Context().Value(CtxKey).(*AuthCtx)
 	if !ok {

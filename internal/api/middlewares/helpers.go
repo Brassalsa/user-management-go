@@ -7,7 +7,9 @@ import (
 	"strings"
 )
 
-type HFunc func(w http.ResponseWriter, r *http.Request, next *func())
+type Next *func()
+
+type HFunc func(w http.ResponseWriter, r *http.Request, next Next)
 
 type ctxKey string
 
