@@ -40,19 +40,30 @@ func (db *Database) Connect(ctx context.Context, dbName string) error {
 	}
 
 	db.database = client.Database(dbName)
-	indexModel := mongo.IndexModel{
+	collection := client.Database(dbName).Collection("users")
+
+	iMUsername := mongo.IndexModel{
 		Keys: bson.D{
 			{Key: "username", Value: 1},
+		},
+		Options: options.Index().SetUnique(true),
+	}
+	_, err = collection.Indexes().CreateOne(ctx, iMUsername)
+	if err != nil {
+		log.Fatal(err)
+	}
+	iMEmail := mongo.IndexModel{
+		Keys: bson.D{
 			{Key: "email", Value: 1},
 		},
 		Options: options.Index().SetUnique(true),
 	}
-	collection := client.Database(dbName).Collection("users")
-	db.collections = []string{"users"}
-	_, err = collection.Indexes().CreateOne(ctx, indexModel)
+	_, err = collection.Indexes().CreateOne(ctx, iMEmail)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	db.collections = []string{"users"}
 	return nil
 }
 
@@ -114,4 +125,26 @@ func (db *Database) UpdateById(collectionName string, id primitive.ObjectID, upd
 		return nil, err
 	}
 	return res, nil
+}
+
+// get all the data
+func (db *Database) GetAllDocuments(collectionName string, results interface{}) error {
+	if c := helpers.Contains(db.collections, collectionName); !c {
+		return errors.New("collection doesn't exists")
+	}
+
+	coll := db.database.Collection(collectionName)
+	cursor, err := coll.Find(db.Ctx, bson.D{})
+
+	if err != nil {
+		return err
+	}
+
+	defer cursor.Close(db.Ctx)
+
+	if err := cursor.All(db.Ctx, results); err != nil {
+		return err
+	}
+
+	return nil
 }
