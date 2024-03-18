@@ -48,5 +48,8 @@ Admin users can view, modify and delete users. They can also change their and ot
 
 ### Admin: /api/v1/admin
 
-- Create admin account (post): /register
+- Get all users (get): /all-users
+- Create admin/user account (post): /register
 - Delete user (delete): /user/{userID}
+- Get user details by id (get): /user/{userID}
+- Modify user details (put): /user/{userID}
