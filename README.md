@@ -4,6 +4,14 @@
 
 User Management system is a RESTful api, made with go lang, mongoDB and more, that allows user to make an account with their email, username, name and password, also upload their profile image when account is created.
 
+## Environment Variables
+
+```bash
+DB_URI="mongodb://localhost:27017"
+PORT=3000
+JWT_SECRET="<any-long-string-will-do>"
+```
+
 ## Technolgies used
 
 ### net/http

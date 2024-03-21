@@ -5,12 +5,21 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/Brassalsa/user-management-go/internal/api"
 	"github.com/Brassalsa/user-management-go/internal/db"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load()
+	portString := os.Getenv("PORT")
+	dbUrl := os.Getenv("DB_URI")
+
+	if portString == "" || dbUrl == "" {
+		log.Fatal("PORT or DB_URI is not found in .env")
+	}
 	// db connect
 	dbFn := db.Database{
 		Url: "mongodb://localhost:27017",
@@ -36,6 +45,10 @@ func main() {
 	// api routes
 	api.HandleV1Router(r, &dbFn)
 
-	fmt.Println("server @ http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	server := &http.Server{
+		Handler: r,
+		Addr:    ":" + portString}
+
+	fmt.Println("server @ http://localhost:", portString)
+	log.Fatal(server.ListenAndServe())
 }

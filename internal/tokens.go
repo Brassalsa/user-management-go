@@ -3,13 +3,21 @@ package internal
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-var mySigningKey = []byte("secret")
+func getSecret() []byte {
+	var secretStr = os.Getenv("JWT_SECRET")
+	if secretStr == "" {
+		fmt.Println("JWT_SECRET is not found in env, using 'mysecret' as secret string")
+		return []byte("mysecret")
+	}
+	return []byte(secretStr)
+}
 
 type AuthUser struct {
 	Id       primitive.ObjectID `json:"id"`
@@ -33,7 +41,7 @@ func GenerateJWT(authUser AuthUser) (string, error) {
 	claims["user"] = string(authUserJson)
 	claims["exp"] = time.Now().Add(time.Minute * 60 * 24).Unix()
 
-	tokenString, err := token.SignedString(mySigningKey)
+	tokenString, err := token.SignedString(getSecret())
 
 	if err != nil {
 		err = fmt.Errorf("something went wrong: %s", err.Error())
@@ -49,7 +57,7 @@ func ValidateToken(tokenString string) (AuthUser, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return mySigningKey, nil
+		return getSecret(), nil
 	})
 	if err != nil {
 		return authUser, err
